@@ -7,6 +7,7 @@ use App\Models\Nilai;
 use App\Models\Gallery;
 use App\Models\Guru;
 use Carbon\Carbon;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class SiswaController extends Controller
 {
@@ -65,6 +66,59 @@ class SiswaController extends Controller
             ->pluck('tahun_ajaran');
 
         return view('siswa.nilai', compact('nilai', 'semester', 'tahunAjaran', 'tahunAjaranList'));
+    }
+
+    public function downloadRapor(Request $request)
+    {
+        try {
+            $siswa = auth()->user()->load('siswa');
+            $semester = $request->get('semester', '1');
+            $tahunAjaran = $request->get('tahun_ajaran', '2023/2024');
+
+            $nilai = Nilai::with('guru')
+                ->where('siswa_id', $siswa->id)
+                ->where('semester', $semester)
+                ->where('tahun_ajaran', $tahunAjaran)
+                ->get();
+
+            if ($nilai->isEmpty()) {
+                if ($request->ajax()) {
+                    return response()->json(['error' => 'Tidak ada data nilai'], 404);
+                }
+                return back()->with('error', 'Tidak ada data nilai untuk semester dan tahun ajaran yang dipilih');
+            }
+
+            $data = [
+                'siswa' => $siswa,
+                'nilai' => $nilai,
+                'semester' => $semester,
+                'tahunAjaran' => $tahunAjaran,
+                'rataRata' => $nilai->avg('nilai')
+            ];
+
+            $pdf = Pdf::loadView('siswa.rapor-pdf', $data);
+            $pdf->setPaper('A4', 'portrait');
+
+            if ($request->ajax()) {
+                $output = base64_encode($pdf->output());
+                return response()->json([
+                    'success' => true,
+                    'file' => $output,
+                    'filename' => "rapor_{$siswa->name}_{$semester}_{$tahunAjaran}.pdf"
+                ]);
+            }
+
+            return $pdf->stream("rapor_{$siswa->name}_{$semester}_{$tahunAjaran}.pdf");
+
+        } catch (\Exception $e) {
+            \Log::error('Error generating rapor: ' . $e->getMessage());
+            \Log::error($e->getTraceAsString());
+
+            if ($request->ajax()) {
+                return response()->json(['error' => 'Terjadi kesalahan saat membuat rapor'], 500);
+            }
+            return back()->with('error', 'Terjadi kesalahan saat membuat rapor');
+        }
     }
 
     private function hitungGrade($nilai)
