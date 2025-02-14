@@ -18,7 +18,7 @@
                     <div class="mb-3">
                         <label for="nis" class="form-label">NIS</label>
                         <input type="text" class="form-control @error('nis') is-invalid @enderror"
-                               id="nis" name="nis" value="{{ old('nis', $siswa->nis) }}" required>
+                               id="nis" name="nis" value="{{ old('nis', $siswa->siswa->nis) }}" required>
                         @error('nis')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
@@ -36,7 +36,7 @@
                     <div class="mb-3">
                         <label for="kelas" class="form-label">Kelas</label>
                         <input type="text" class="form-control @error('kelas') is-invalid @enderror"
-                               id="kelas" name="kelas" value="{{ old('kelas', $siswa->kelas) }}" required>
+                               id="kelas" name="kelas" value="{{ old('kelas', $siswa->siswa->kelas) }}" required>
                         @error('kelas')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror

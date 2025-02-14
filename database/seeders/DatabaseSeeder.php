@@ -23,7 +23,7 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             UsersTableSeeder::class,
-            NilaiTableSeeder::class,
+            // NilaiTableSeeder::class,
         ]);
     }
 }

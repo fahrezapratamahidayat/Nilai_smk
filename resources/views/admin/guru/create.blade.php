@@ -104,9 +104,11 @@
                         <select class="form-select @error('kelas_ajar') is-invalid @enderror"
                                 id="kelas_ajar" name="kelas_ajar" required>
                             <option value="">Pilih Kelas</option>
-                            <option value="10" {{ old('kelas_ajar') == '10' ? 'selected' : '' }}>Kelas 10</option>
-                            <option value="11" {{ old('kelas_ajar') == '11' ? 'selected' : '' }}>Kelas 11</option>
-                            <option value="12" {{ old('kelas_ajar') == '12' ? 'selected' : '' }}>Kelas 12</option>
+                            @foreach($daftarKelas as $value => $label)
+                                <option value="{{ $value }}" {{ old('kelas_ajar') == $value ? 'selected' : '' }}>
+                                    {{ $label }}
+                                </option>
+                            @endforeach
                         </select>
                         @error('kelas_ajar')
                             <div class="invalid-feedback">{{ $message }}</div>

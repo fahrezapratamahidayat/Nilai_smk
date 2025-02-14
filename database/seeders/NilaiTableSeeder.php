@@ -5,12 +5,15 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\Nilai;
 use App\Models\User;
+use App\Models\Siswa;
 
 class NilaiTableSeeder extends Seeder
 {
     public function run()
     {
-        $siswa = User::where('role', 'siswa')->get();
+        $siswa = Siswa::with('user')->get();
+        $guru = User::where('role', 'guru')->first();
+
         $mapel = [
             'Matematika',
             'Bahasa Indonesia',
@@ -23,10 +26,11 @@ class NilaiTableSeeder extends Seeder
         foreach ($siswa as $s) {
             foreach ($mapel as $m) {
                 Nilai::create([
-                    'user_id' => $s->id,
+                    'siswa_id' => $s->user_id,
+                    'guru_id' => $guru->id,
                     'mata_pelajaran' => $m,
                     'nilai' => rand(75, 100),
-                    'semester' => 'ganjil',
+                    'semester' => '1',
                     'tahun_ajaran' => '2023/2024'
                 ]);
             }

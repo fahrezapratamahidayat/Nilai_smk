@@ -17,8 +17,9 @@
                         <thead>
                             <tr>
                                 <th>No</th>
-                                <th>Kelas</th>
                                 <th>Nama Wali Kelas</th>
+                                <th>NIP</th>
+                                <th>Kelas</th>
                                 <th>Aksi</th>
                             </tr>
                         </thead>
@@ -26,8 +27,9 @@
                             @foreach($walikelas as $wk)
                             <tr>
                                 <td>{{ $loop->iteration }}</td>
-                                <td>{{ $wk->kelas }}</td>
                                 <td>{{ $wk->name }}</td>
+                                <td>{{ $wk->guru->nip }}</td>
+                                <td>{{ $wk->kelas }}</td>
                                 <td>
                                     <a href="{{ route('admin.walikelas.edit', $wk->id) }}" class="btn btn-sm btn-info">
                                         <i class="fas fa-edit"></i>

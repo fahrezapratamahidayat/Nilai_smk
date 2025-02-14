@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Gallery;
+use App\Models\Nilai;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use App\Models\Guru;
 
 class AdminController extends Controller
 {
@@ -14,92 +17,253 @@ class AdminController extends Controller
         return view('admin.dashboard');
     }
 
+    public function galleryIndex()
+    {
+        $galleries = Gallery::all();
+        return view('admin.gallery.index', compact('galleries'));
+    }
+
+    public function galleryCreate()
+    {
+        return view('admin.gallery.create');
+    }
+
+    public function galleryStore(Request $request)
+    {
+        $validated = $request->validate([
+            'title' => 'required',
+            'description' => 'required',
+            'image' => 'required|image|mimes:jpeg,png,jpg|max:2048'
+        ]);
+
+        if ($request->hasFile('image')) {
+            $image = $request->file('image');
+            $filename = time() . '.' . $image->getClientOriginalExtension();
+            $image->storeAs('public/gallery', $filename);
+            $validated['image'] = $filename;
+        }
+
+        Gallery::create($validated);
+        return redirect()->route('admin.gallery.index')->with('success', 'Gallery berhasil ditambahkan');
+    }
+
+    public function galleryDestroy($id)
+    {
+        $gallery = Gallery::findOrFail($id);
+
+        // Delete the image file
+        if ($gallery->image) {
+            Storage::delete('public/gallery/' . $gallery->image);
+        }
+
+        $gallery->delete();
+        return redirect()->route('admin.gallery.index')->with('success', 'Gallery berhasil dihapus');
+    }
+
+    public function nilaiIndex()
+    {
+        $nilai = Nilai::with(['siswa', 'guru'])->get();
+        return view('admin.nilai.index', compact('nilai'));
+    }
+
+    public function nilaiCreate()
+    {
+        $siswa = User::where('role', 'siswa')->get();
+        return view('admin.nilai.create', compact('siswa'));
+    }
+
+    public function nilaiStore(Request $request)
+    {
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'mata_pelajaran' => 'required',
+            'nilai' => 'required|integer|min:0|max:100',
+            'semester' => 'required|in:1,2',
+            'tahun_ajaran' => 'required'
+        ]);
+
+        Nilai::create([
+            'siswa_id' => $validated['user_id'],
+            'guru_id' => auth()->id(), // mengambil ID guru yang sedang login
+            'mata_pelajaran' => $validated['mata_pelajaran'],
+            'nilai' => $validated['nilai'],
+            'semester' => $validated['semester'],
+            'tahun_ajaran' => $validated['tahun_ajaran']
+        ]);
+
+        return redirect()->route('admin.nilai.index')->with('success', 'Nilai berhasil ditambahkan');
+    }
+
+    public function nilaiEdit($id)
+    {
+        $nilai = Nilai::findOrFail($id);
+        $siswa = User::where('role', 'siswa')->get();
+        return view('admin.nilai.edit', compact('nilai', 'siswa'));
+    }
+
+    public function nilaiUpdate(Request $request, $id)
+    {
+        $nilai = Nilai::findOrFail($id);
+
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'mata_pelajaran' => 'required',
+            'nilai' => 'required|integer|min:0|max:100',
+            'semester' => 'required|in:1,2',
+            'tahun_ajaran' => 'required'
+        ]);
+
+        $nilai->update([
+            'siswa_id' => $validated['user_id'],
+            'mata_pelajaran' => $validated['mata_pelajaran'],
+            'nilai' => $validated['nilai'],
+            'semester' => $validated['semester'],
+            'tahun_ajaran' => $validated['tahun_ajaran']
+        ]);
+
+        return redirect()->route('admin.nilai.index')->with('success', 'Nilai berhasil diperbarui');
+    }
+
+    public function nilaiDestroy($id)
+    {
+        $nilai = Nilai::findOrFail($id);
+        $nilai->delete();
+        return redirect()->route('admin.nilai.index')->with('success', 'Nilai berhasil dihapus');
+    }
+
     // Manajemen Guru
     public function guruIndex()
     {
-        $guru = User::where('role', 'guru')->get();
+        $guru = User::with('guru')->where('role', 'guru')->get();
         return view('admin.guru.index', compact('guru'));
     }
 
     public function guruCreate()
     {
-        return view('admin.guru.create');
+        $daftarKelas = Guru::getDaftarKelas();
+        return view('admin.guru.create', compact('daftarKelas'));
     }
 
     public function guruStore(Request $request)
     {
         $validated = $request->validate([
-            'nip' => 'required|unique:users',
             'name' => 'required',
-            'jenis_kelamin' => 'required|in:L,P',
-            'tempat_lahir' => 'required',
-            'tanggal_lahir' => 'required|date',
-            'alamat' => 'required',
             'email' => 'required|email|unique:users',
             'password' => 'required|min:6',
+            'nip' => 'required|unique:guru,nip',
             'mata_pelajaran' => 'required',
             'kelas_ajar' => 'required|in:10,11,12',
-            'status_guru' => 'required|in:wali_kelas,guru_mapel'
-        ]);
-
-        $validated['password'] = Hash::make($validated['password']);
-        $validated['role'] = 'guru';
-
-        User::create($validated);
-        return redirect()->route('admin.guru.index')->with('success', 'Guru berhasil ditambahkan');
-    }
-
-    public function guruEdit($id)
-    {
-        $guru = User::findOrFail($id);
-        return view('admin.guru.edit', compact('guru'));
-    }
-
-    public function guruUpdate(Request $request, $id)
-    {
-        $guru = User::findOrFail($id);
-
-        $validated = $request->validate([
-            'nip' => 'required|unique:users,nip,' . $id,
-            'name' => 'required',
-            'email' => 'required|email|unique:users,email,' . $id,
-            'password' => 'nullable|min:6',
-            'jenis_kelamin' => 'required|in:L,P',
-            'tempat_lahir' => 'required',
+            'status_guru' => 'required|in:guru_mapel,wali_kelas',
+            'jenis_kelamin' => 'required',
             'tanggal_lahir' => 'required|date',
-            'alamat' => 'required',
+            'tempat_lahir' => 'required',
+            'alamat' => 'required'
+        ]);
+
+        // Buat user baru
+        $userData = array_merge(
+            array_intersect_key($validated, array_flip([
+                'name', 'email', 'jenis_kelamin',
+                'tempat_lahir', 'tanggal_lahir', 'alamat'
+            ])),
+            [
+                'role' => 'guru',
+                'password' => Hash::make($validated['password'])
+            ]
+        );
+
+        $user = User::create($userData);
+
+        // Buat data guru
+        $user->guru()->create([
+            'nip' => $validated['nip'],
+            'mata_pelajaran' => $validated['mata_pelajaran'],
+            'kelas_ajar' => $validated['kelas_ajar'],
+            'status_guru' => $validated['status_guru']
+        ]);
+
+        return redirect()->route('admin.guru.index')
+            ->with('success', 'Data guru berhasil ditambahkan');
+    }
+
+    public function guruEdit(User $guru)
+    {
+        $guru->load('guru');
+        $daftarKelas = Guru::getDaftarKelas();
+        return view('admin.guru.edit', compact('guru', 'daftarKelas'));
+    }
+
+    public function guruUpdate(Request $request, User $guru)
+    {
+        $validated = $request->validate([
+            'name' => 'required',
+            'email' => 'required|email|unique:users,email,' . $guru->id,
+            'nip' => 'required|unique:guru,nip,' . $guru->guru->id,
             'mata_pelajaran' => 'required',
             'kelas_ajar' => 'required|in:10,11,12',
-            'status_guru' => 'required|in:wali_kelas,guru_mapel'
+            'status_guru' => 'required|in:guru_mapel,wali_kelas',
+            'jenis_kelamin' => 'required',
+            'tanggal_lahir' => 'required|date',
+            'tempat_lahir' => 'required',
+            'alamat' => 'required'
         ]);
+
+        // Update user data
+        $userData = array_intersect_key($validated, array_flip([
+            'name', 'email', 'jenis_kelamin',
+            'tempat_lahir', 'tanggal_lahir', 'alamat'
+        ]));
 
         if ($request->filled('password')) {
-            $validated['password'] = Hash::make($request->password);
-        } else {
-            unset($validated['password']);
+            $userData['password'] = Hash::make($request->password);
         }
 
-        $guru->update($validated);
-        return redirect()->route('admin.guru.index')->with('success', 'Data guru berhasil diperbarui');
+        $guru->update($userData);
+
+        // Update data guru
+        $guru->guru->update([
+            'nip' => $validated['nip'],
+            'mata_pelajaran' => $validated['mata_pelajaran'],
+            'kelas_ajar' => $validated['kelas_ajar'],
+            'status_guru' => $validated['status_guru']
+        ]);
+
+        return redirect()->route('admin.guru.index')
+            ->with('success', 'Data guru berhasil diupdate');
     }
 
-    public function guruDestroy($id)
+    public function guruDestroy(User $guru)
     {
-        $guru = User::findOrFail($id);
+        // Hapus data guru terlebih dahulu
+        $guru->guru()->delete();
+        // Kemudian hapus data user
         $guru->delete();
-        return redirect()->route('admin.guru.index')->with('success', 'Guru berhasil dihapus');
+
+        return redirect()->route('admin.guru.index')
+            ->with('success', 'Data guru berhasil dihapus');
     }
 
     // Manajemen Wali Kelas
     public function walikelasIndex()
     {
-        $walikelas = User::where('status_guru', 'wali_kelas')->get();
+        $walikelas = User::with('guru')
+            ->whereHas('guru', function($query) {
+                $query->where('status_guru', 'wali_kelas');
+            })->get();
+
         return view('admin.walikelas.index', compact('walikelas'));
     }
 
     public function walikelasCreate()
     {
-        $guru = User::where('role', 'guru')->get();
+        // Ambil hanya guru yang berstatus guru_mapel
+        $guru = User::with('guru')
+            ->whereHas('guru', function($query) {
+                $query->where('status_guru', 'guru_mapel');
+            })
+            ->where('role', 'guru')
+            ->get();
+
         return view('admin.walikelas.create', compact('guru'));
     }
 
@@ -107,14 +271,16 @@ class AdminController extends Controller
     {
         $validated = $request->validate([
             'user_id' => 'required|exists:users,id',
-            'kelas' => 'required'
+            'kelas' => 'required|in:10,11,12'
         ]);
 
-        $guru = User::findOrFail($request->user_id);
-        $guru->update([
-            'status_guru' => 'wali_kelas',
-            'kelas' => $request->kelas
-        ]);
+        $guru = Guru::where('user_id', $request->user_id)->first();
+        if ($guru) {
+            $guru->update([
+                'status_guru' => 'wali_kelas',
+                'kelas_ajar' => $validated['kelas']
+            ]);
+        }
 
         return redirect()->route('admin.walikelas.index')
             ->with('success', 'Wali Kelas berhasil ditambahkan');
@@ -122,8 +288,12 @@ class AdminController extends Controller
 
     public function walikelasEdit($id)
     {
-        $walikelas = User::findOrFail($id);
-        $guru = User::where('role', 'guru')->get();
+        $walikelas = User::with('guru')->findOrFail($id);
+        $guru = User::with('guru')
+            ->whereHas('guru', function($query) use ($id) {
+                $query->where('status_guru', 'guru_mapel')
+                    ->orWhere('user_id', $id);
+            })->get();
         return view('admin.walikelas.edit', compact('walikelas', 'guru'));
     }
 
@@ -134,25 +304,34 @@ class AdminController extends Controller
             'kelas' => 'required'
         ]);
 
-        // Jika mengganti guru, update status guru lama menjadi guru mapel
-        $walikelas = User::findOrFail($id);
-        if ($walikelas->id != $request->user_id) {
-            $walikelas->update([
-                'status_guru' => 'guru_mapel',
-                'kelas' => null
-            ]);
+        // Cari guru yang akan diupdate
+        $guruLama = Guru::where('user_id', $id)->first();
+        $guruBaru = Guru::where('user_id', $request->user_id)->first();
+
+        // Jika mengganti guru
+        if ($id != $request->user_id) {
+            // Update status guru lama menjadi guru mapel
+            if ($guruLama) {
+                $guruLama->update([
+                    'status_guru' => 'guru_mapel',
+                    'kelas_ajar' => '10' // Set default value sesuai enum
+                ]);
+            }
 
             // Update guru baru menjadi wali kelas
-            $guruBaru = User::findOrFail($request->user_id);
-            $guruBaru->update([
-                'status_guru' => 'wali_kelas',
-                'kelas' => $request->kelas
-            ]);
+            if ($guruBaru) {
+                $guruBaru->update([
+                    'status_guru' => 'wali_kelas',
+                    'kelas_ajar' => $validated['kelas']
+                ]);
+            }
         } else {
             // Jika hanya update kelas
-            $walikelas->update([
-                'kelas' => $request->kelas
-            ]);
+            if ($guruLama) {
+                $guruLama->update([
+                    'kelas_ajar' => $validated['kelas']
+                ]);
+            }
         }
 
         return redirect()->route('admin.walikelas.index')
@@ -161,11 +340,13 @@ class AdminController extends Controller
 
     public function walikelasDestroy($id)
     {
-        $walikelas = User::findOrFail($id);
-        $walikelas->update([
-            'status_guru' => 'guru_mapel',
-            'kelas' => null
-        ]);
+        $guru = Guru::where('user_id', $id)->first();
+        if ($guru) {
+            $guru->update([
+                'status_guru' => 'guru_mapel',
+                'kelas_ajar' => '10' // Set default value sesuai enum
+            ]);
+        }
 
         return redirect()->route('admin.walikelas.index')
             ->with('success', 'Wali Kelas berhasil dihapus');
@@ -174,7 +355,9 @@ class AdminController extends Controller
     // Manajemen Siswa
     public function siswaIndex()
     {
-        $siswa = User::where('role', 'siswa')->get();
+        $siswa = User::with('siswa')
+            ->where('role', 'siswa')
+            ->get();
         return view('admin.siswa.index', compact('siswa'));
     }
 
@@ -186,30 +369,51 @@ class AdminController extends Controller
     public function siswaStore(Request $request)
     {
         $validated = $request->validate([
-            'nis' => 'required|unique:users',
             'name' => 'required',
             'email' => 'required|email|unique:users',
             'password' => 'required|min:6',
-            'kelas' => 'required',
             'jenis_kelamin' => 'required|in:L,P',
             'tempat_lahir' => 'required',
             'tanggal_lahir' => 'required|date',
             'alamat' => 'required',
+            'nis' => 'required|unique:siswa,nis',
+            'kelas' => [
+                'required',
+                'regex:/^(10|11|12)/', // Kelas harus dimulai dengan 10, 11, atau 12
+            ],
             'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048'
+        ], [
+            'kelas.regex' => 'Format kelas tidak valid. Kelas harus dimulai dengan 10, 11, atau 12'
         ]);
 
+        // Buat user baru
+        $userData = array_merge(
+            array_intersect_key($validated, array_flip([
+                'name', 'email', 'password', 'jenis_kelamin',
+                'tempat_lahir', 'tanggal_lahir', 'alamat'
+            ])),
+            ['role' => 'siswa', 'password' => Hash::make($validated['password'])]
+        );
+
+        $user = User::create($userData);
+
+        // Upload foto jika ada
+        $foto = null;
         if ($request->hasFile('foto')) {
-            $foto = $request->file('foto');
-            $filename = time() . '.' . $foto->getClientOriginalExtension();
-            $foto->storeAs('public/foto_siswa', $filename);
-            $validated['foto'] = $filename;
+            $fotoFile = $request->file('foto');
+            $foto = time() . '.' . $fotoFile->getClientOriginalExtension();
+            $fotoFile->storeAs('public/foto_siswa', $foto);
         }
 
-        $validated['password'] = Hash::make($validated['password']);
-        $validated['role'] = 'siswa';
+        // Buat data siswa
+        $user->siswa()->create([
+            'nis' => $validated['nis'],
+            'kelas' => $validated['kelas'],
+            'foto' => $foto
+        ]);
 
-        User::create($validated);
-        return redirect()->route('admin.siswa.index')->with('success', 'Siswa berhasil ditambahkan');
+        return redirect()->route('admin.siswa.index')
+            ->with('success', 'Siswa berhasil ditambahkan');
     }
 
     public function siswaEdit($id)
@@ -220,47 +424,78 @@ class AdminController extends Controller
 
     public function siswaUpdate(Request $request, $id)
     {
-        $siswa = User::findOrFail($id);
+        $user = User::with('siswa')->findOrFail($id);
 
         $validated = $request->validate([
-            'nis' => 'required|unique:users,nis,' . $id,
             'name' => 'required',
             'email' => 'required|email|unique:users,email,' . $id,
             'password' => 'nullable|min:6',
-            'kelas' => 'required',
             'jenis_kelamin' => 'required|in:L,P',
             'tempat_lahir' => 'required',
             'tanggal_lahir' => 'required|date',
             'alamat' => 'required',
+            'nis' => 'required|unique:siswa,nis,' . $user->siswa->id,
+            'kelas' => 'required',
             'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048'
         ]);
 
-        if ($request->hasFile('foto')) {
-            // Hapus foto lama jika ada
-            if ($siswa->foto) {
-                Storage::delete('public/foto_siswa/' . $siswa->foto);
-            }
-
-            $foto = $request->file('foto');
-            $filename = time() . '.' . $foto->getClientOriginalExtension();
-            $foto->storeAs('public/foto_siswa', $filename);
-            $validated['foto'] = $filename;
-        }
+        // Update user data
+        $userData = array_intersect_key($validated, array_flip([
+            'name', 'email', 'jenis_kelamin',
+            'tempat_lahir', 'tanggal_lahir', 'alamat'
+        ]));
 
         if ($request->filled('password')) {
-            $validated['password'] = Hash::make($request->password);
-        } else {
-            unset($validated['password']);
+            $userData['password'] = Hash::make($request->password);
         }
 
-        $siswa->update($validated);
-        return redirect()->route('admin.siswa.index')->with('success', 'Data siswa berhasil diperbarui');
+        $user->update($userData);
+
+        // Handle foto upload
+        if ($request->hasFile('foto')) {
+            // Delete old photo if exists
+            if ($user->siswa && $user->siswa->foto) {
+                Storage::delete('public/foto_siswa/' . $user->siswa->foto);
+            }
+
+            $fotoFile = $request->file('foto');
+            $foto = time() . '.' . $fotoFile->getClientOriginalExtension();
+            $fotoFile->storeAs('public/foto_siswa', $foto);
+            $validated['foto'] = $foto;
+        }
+
+        // Update siswa data
+        if ($user->siswa) {
+            $siswaData = [
+                'nis' => $validated['nis'],
+                'kelas' => $validated['kelas']
+            ];
+
+            if (isset($validated['foto'])) {
+                $siswaData['foto'] = $validated['foto'];
+            }
+
+            $user->siswa->update($siswaData);
+        }
+
+        return redirect()->route('admin.siswa.index')
+            ->with('success', 'Data siswa berhasil diperbarui');
     }
 
     public function siswaDestroy($id)
     {
-        $siswa = User::findOrFail($id);
+        $siswa = User::with('siswa')->findOrFail($id);
+
+        // Hapus foto jika ada
+        if ($siswa->siswa && $siswa->siswa->foto) {
+            Storage::delete('public/foto_siswa/' . $siswa->siswa->foto);
+        }
+
+        // Hapus data siswa dan user
+        $siswa->siswa()->delete();
         $siswa->delete();
-        return redirect()->route('admin.siswa.index')->with('success', 'Siswa berhasil dihapus');
+
+        return redirect()->route('admin.siswa.index')
+            ->with('success', 'Siswa berhasil dihapus');
     }
 }

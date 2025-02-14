@@ -10,10 +10,11 @@ return new class extends Migration
     {
         Schema::create('nilais', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('siswa_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('guru_id')->constrained('users')->onDelete('cascade');
             $table->string('mata_pelajaran');
-            $table->integer('nilai');
-            $table->enum('semester', ['ganjil', 'genap']);
+            $table->decimal('nilai', 5, 2);
+            $table->enum('semester', ['1', '2']);
             $table->string('tahun_ajaran');
             $table->timestamps();
         });

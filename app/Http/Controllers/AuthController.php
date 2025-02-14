@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\User;
 
 class AuthController extends Controller
 {
@@ -16,14 +17,29 @@ class AuthController extends Controller
     {
         $credentials = $request->validate([
             'email' => 'required|email',
-            'password' => 'required'
+            'password' => 'required',
+            'role' => 'required|in:admin,guru,walikelas,siswa'
         ]);
 
-        if (Auth::attempt($credentials)) {
+        // Cek apakah email dan role sesuai
+        $user = User::where('email', $credentials['email'])
+                    ->where('role', $credentials['role'])
+                    ->first();
+
+        if (!$user) {
+            return back()->withErrors([
+                'email' => 'Email atau role tidak sesuai.',
+            ])->withInput($request->except('password'));
+        }
+
+        // Coba login
+        if (Auth::attempt(['email' => $credentials['email'],
+                          'password' => $credentials['password'],
+                          'role' => $credentials['role']])) {
             $request->session()->regenerate();
 
             // Redirect berdasarkan role
-            switch(Auth::user()->role) {
+            switch($credentials['role']) {
                 case 'admin':
                     return redirect()->route('admin.dashboard');
                 case 'walikelas':
@@ -39,7 +55,7 @@ class AuthController extends Controller
 
         return back()->withErrors([
             'email' => 'Email atau password salah.',
-        ]);
+        ])->withInput($request->except('password'));
     }
 
     public function logout(Request $request)

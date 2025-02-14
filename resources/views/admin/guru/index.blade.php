@@ -32,15 +32,15 @@
                             @foreach($guru as $g)
                             <tr>
                                 <td>{{ $loop->iteration }}</td>
-                                <td>{{ $g->nip ?? '-' }}</td>
+                                <td>{{ $g->guru->nip ?? '-' }}</td>
                                 <td>{{ $g->name }}</td>
                                 <td>{{ $g->jenis_kelamin == 'L' ? 'Laki-laki' : 'Perempuan' }}</td>
                                 <td>{{ $g->tempat_lahir }}, {{ $g->tanggal_lahir ? \Carbon\Carbon::parse($g->tanggal_lahir)->format('d-m-Y') : '-' }}</td>
                                 <td>{{ $g->alamat ?? '-' }}</td>
-                                <td>{{ $g->mata_pelajaran ?? '-' }}</td>
-                                <td>{{ $g->kelas_ajar ? 'Kelas ' . $g->kelas_ajar : '-' }}</td>
+                                <td>{{ $g->guru->mata_pelajaran ?? '-' }}</td>
+                                <td>{{ $g->guru->kelas_ajar ? 'Kelas ' . $g->guru->kelas_ajar : '-' }}</td>
                                 <td>
-                                    @if($g->status_guru == 'wali_kelas')
+                                    @if($g->guru->status_guru == 'wali_kelas')
                                         <span class="badge bg-primary">Wali Kelas</span>
                                     @else
                                         <span class="badge bg-info">Guru Mapel</span>

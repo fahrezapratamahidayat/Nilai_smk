@@ -108,6 +108,20 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link {{ Request::is('admin/gallery*') ? 'active' : '' }}"
+                       href="{{ route('admin.gallery.index') }}">
+                        <i class="fas fa-images"></i>
+                        Galeri
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ Request::is('admin/nilai*') ? 'active' : '' }}"
+                       href="{{ route('admin.nilai.index') }}">
+                        <i class="fas fa-star"></i>
+                        Nilai Siswa
+                    </a>
+                </li>
+                <li class="nav-item">
                     <form action="{{ route('logout') }}" method="POST" class="d-inline">
                         @csrf
                         <button type="submit" class="nav-link border-0 bg-transparent">

@@ -31,15 +31,15 @@
                             @foreach($siswa as $s)
                             <tr>
                                 <td>{{ $loop->iteration }}</td>
-                                <td>{{ $s->nis ?? '-' }}</td>
+                                <td>{{ $s->siswa->nis ?? '-' }}</td>
                                 <td>{{ $s->name }}</td>
                                 <td>{{ $s->jenis_kelamin == 'L' ? 'Laki-laki' : 'Perempuan' }}</td>
                                 <td>{{ $s->tempat_lahir }}, {{ $s->tanggal_lahir ? \Carbon\Carbon::parse($s->tanggal_lahir)->format('d-m-Y') : '-' }}</td>
                                 <td>{{ $s->alamat ?? '-' }}</td>
-                                <td>{{ $s->kelas ?? '-' }}</td>
+                                <td>{{ $s->siswa->kelas ?? '-' }}</td>
                                 <td>
-                                    @if($s->foto)
-                                        <img src="{{ asset('storage/foto_siswa/' . $s->foto) }}"
+                                    @if($s->siswa && $s->siswa->foto)
+                                        <img src="{{ asset('storage/foto_siswa/' . $s->siswa->foto) }}"
                                              alt="Foto {{ $s->name }}"
                                              width="50" height="50"
                                              class="rounded-circle">

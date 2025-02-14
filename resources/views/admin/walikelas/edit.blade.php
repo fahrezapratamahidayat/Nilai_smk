@@ -16,13 +16,13 @@
                     @csrf
                     @method('PUT')
                     <div class="mb-3">
-                        <label for="name" class="form-label">Nama Wali Kelas</label>
+                        <label for="user_id" class="form-label">Nama Guru</label>
                         <select class="form-select @error('user_id') is-invalid @enderror"
                                 name="user_id" required>
                             <option value="">Pilih Guru</option>
                             @foreach($guru as $g)
-                                <option value="{{ $g->id }}" {{ old('user_id', $walikelas->id) == $g->id ? 'selected' : '' }}>
-                                    {{ $g->name }}
+                                <option value="{{ $g->id }}" {{ $walikelas->id == $g->id ? 'selected' : '' }}>
+                                    {{ $g->name }} - {{ $g->guru->nip }}
                                 </option>
                             @endforeach
                         </select>
@@ -34,7 +34,8 @@
                     <div class="mb-3">
                         <label for="kelas" class="form-label">Kelas</label>
                         <input type="text" class="form-control @error('kelas') is-invalid @enderror"
-                               id="kelas" name="kelas" value="{{ old('kelas', $walikelas->kelas) }}" required>
+                               id="kelas" name="kelas"
+                               value="{{ old('kelas', $walikelas->guru->kelas_ajar) }}" required>
                         @error('kelas')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
