@@ -5,9 +5,13 @@
     <div class="col-md-12">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2>Nilai Akademik</h2>
-            <button class="btn btn-primary">
-                <i class="fas fa-download"></i> Download Rapor
-            </button>
+            <form id="downloadForm" action="{{ route('siswa.download-rapor') }}" method="GET" class="d-inline">
+                <input type="hidden" name="semester" value="{{ $semester }}">
+                <input type="hidden" name="tahun_ajaran" value="{{ $tahunAjaran }}">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-download"></i> Download Rapor
+                </button>
+            </form>
         </div>
 
         <div class="card">
@@ -84,4 +88,51 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+$(document).ready(function() {
+    $('#downloadForm').on('submit', function(e) {
+        e.preventDefault();
+
+        const btn = $(this).find('button[type="submit"]');
+        const originalText = btn.html();
+        btn.html('<i class="fas fa-spinner fa-spin"></i> Mengunduh...');
+        btn.prop('disabled', true);
+
+        $.ajax({
+            url: $(this).attr('action'),
+            method: 'GET',
+            data: $(this).serialize(),
+            success: function(response) {
+                if (response.success) {
+                    // Buat blob dari base64 PDF
+                    const byteCharacters = atob(response.file);
+                    const byteNumbers = new Array(byteCharacters.length);
+                    for (let i = 0; i < byteCharacters.length; i++) {
+                        byteNumbers[i] = byteCharacters.charCodeAt(i);
+                    }
+                    const byteArray = new Uint8Array(byteNumbers);
+                    const blob = new Blob([byteArray], {type: 'application/pdf'});
+
+                    // Buat URL dan buka di tab baru
+                    const url = window.URL.createObjectURL(blob);
+                    window.open(url, '_blank');
+                } else {
+                    alert('Terjadi kesalahan saat mengunduh rapor');
+                }
+            },
+            error: function(xhr) {
+                const response = xhr.responseJSON;
+                alert(response?.error || 'Terjadi kesalahan saat mengunduh rapor');
+            },
+            complete: function() {
+                btn.html(originalText);
+                btn.prop('disabled', false);
+            }
+        });
+    });
+});
+</script>
+@endpush
 @endsection

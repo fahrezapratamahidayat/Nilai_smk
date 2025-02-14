@@ -63,12 +63,12 @@ class User extends Authenticatable
         return $this->hasOne(Siswa::class);
     }
 
-    public function nilai()
+    public function nilaiSiswa()
     {
         return $this->hasMany(Nilai::class, 'siswa_id');
     }
 
-    public function nilaiDiajar()
+    public function nilaiGuru()
     {
         return $this->hasMany(Nilai::class, 'guru_id');
     }

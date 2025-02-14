@@ -98,8 +98,9 @@ Route::middleware(['auth', 'role:guru'])->prefix('guru')->name('guru.')->group(f
 });
 
 // Route Siswa
-Route::middleware([])->prefix('siswa')->group(function () {
-    Route::get('/dashboard', [SiswaController::class, 'dashboard'])->name('siswa.dashboard');
-    Route::get('/gallery', [SiswaController::class, 'gallery'])->name('siswa.gallery');
-    Route::get('/nilai', [SiswaController::class, 'nilai'])->name('siswa.nilai');
+Route::middleware(['auth', 'role:siswa'])->prefix('siswa')->name('siswa.')->group(function () {
+    Route::get('/dashboard', [SiswaController::class, 'dashboard'])->name('dashboard');
+    Route::get('/gallery', [SiswaController::class, 'gallery'])->name('gallery');
+    Route::get('/nilai', [SiswaController::class, 'nilai'])->name('nilai');
+    Route::get('/download-rapor', [SiswaController::class, 'downloadRapor'])->name('download-rapor');
 });
