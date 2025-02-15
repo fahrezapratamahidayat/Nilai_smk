@@ -7,6 +7,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\WaliKelasController;
 use App\Http\Controllers\GuruController;
+use App\Models\Gallery;
 
 
 /*
@@ -21,7 +22,8 @@ use App\Http\Controllers\GuruController;
 */
 
 Route::get('/', function () {
-    return view('index');
+    $galleries = Gallery::latest()->take(6)->get(); // Ambil 6 galeri terbaru
+    return view('index', compact('galleries'));
 });
 Route::get('/siswa', [SiswaController::class, 'index'])->name('siswa');
 Route::get('/nilai_siswa', [NilaiController::class, 'index'])->name('nilai_siswa');
