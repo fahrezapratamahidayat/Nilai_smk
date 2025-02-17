@@ -4,32 +4,33 @@
 <div class="row">
     <div class="col-md-12">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>Leger Nilai</h2>
-            <button class="btn btn-primary">
-                <i class="fas fa-print"></i> Cetak Leger
-            </button>
+            <h2>Leger Nilai Kelas {{ auth()->user()->guru->kelas_ajar }}</h2>
+            <form action="{{ route('walikelas.leger') }}" method="GET">
+                <input type="hidden" name="download" value="1">
+                <input type="hidden" name="semester" value="{{ $semester }}">
+                <input type="hidden" name="tahun_ajaran" value="{{ $tahunAjaran }}">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-download"></i> Download Leger
+                </button>
+            </form>
         </div>
 
         <div class="card">
             <div class="card-body">
-                <form class="row g-3 mb-4">
+                <form class="row g-3 mb-4" method="GET">
                     <div class="col-md-4">
                         <label class="form-label">Semester</label>
-                        <select class="form-select">
-                            <option value="ganjil">Ganjil</option>
-                            <option value="genap">Genap</option>
+                        <select name="semester" class="form-select" onchange="this.form.submit()">
+                            <option value="1" {{ $semester == '1' ? 'selected' : '' }}>Ganjil</option>
+                            <option value="2" {{ $semester == '2' ? 'selected' : '' }}>Genap</option>
                         </select>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">Tahun Ajaran</label>
-                        <select class="form-select">
-                            <option value="2023/2024">2023/2024</option>
-                            <option value="2024/2025">2024/2025</option>
+                        <select name="tahun_ajaran" class="form-select" onchange="this.form.submit()">
+                            <option value="2023/2024" {{ $tahunAjaran == '2023/2024' ? 'selected' : '' }}>2023/2024</option>
+                            <option value="2024/2025" {{ $tahunAjaran == '2024/2025' ? 'selected' : '' }}>2024/2025</option>
                         </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">&nbsp;</label>
-                        <button type="submit" class="btn btn-primary d-block">Tampilkan</button>
                     </div>
                 </form>
 
@@ -37,41 +38,27 @@
                     <table class="table table-bordered table-hover">
                         <thead class="table-light">
                             <tr>
-                                <th rowspan="2" class="align-middle">No</th>
+                                <th rowspan="2" class="align-middle">Peringkat</th>
                                 <th rowspan="2" class="align-middle">Nama Siswa</th>
-                                <th colspan="10" class="text-center">Mata Pelajaran</th>
+                                @foreach($mataPelajaran as $mapel)
+                                    <th>{{ $mapel }}</th>
+                                @endforeach
                                 <th rowspan="2" class="align-middle">Rata-rata</th>
-                            </tr>
-                            <tr>
-                                <th>MTK</th>
-                                <th>B.IND</th>
-                                <th>B.ING</th>
-                                <th>IPA</th>
-                                <th>IPS</th>
-                                <th>PKN</th>
-                                <th>PAI</th>
-                                <th>PJOK</th>
-                                <th>SBK</th>
-                                <th>TIK</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($siswa ?? [] as $s)
-                            <tr>
-                                <td>{{ $loop->iteration }}</td>
-                                <td>{{ $s->name }}</td>
-                                <td>85</td>
-                                <td>80</td>
-                                <td>75</td>
-                                <td>90</td>
-                                <td>85</td>
-                                <td>80</td>
-                                <td>85</td>
-                                <td>90</td>
-                                <td>85</td>
-                                <td>80</td>
-                                <td>83.5</td>
-                            </tr>
+                            @foreach($peringkat as $index => $siswaId)
+                                @php
+                                    $s = $siswa->firstWhere('id', $siswaId);
+                                @endphp
+                                <tr>
+                                    <td>{{ $index + 1 }}</td>
+                                    <td>{{ $s->name }}</td>
+                                    @foreach($mataPelajaran as $mapel)
+                                        <td>{{ $nilaiSiswa[$s->id][$mapel]->nilai ?? '-' }}</td>
+                                    @endforeach
+                                    <td class="fw-bold">{{ $rataRataSiswa[$s->id] }}</td>
+                                </tr>
                             @endforeach
                         </tbody>
                     </table>
