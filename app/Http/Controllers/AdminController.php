@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Guru;
+use App\Models\WaliKelas;
 
 class AdminController extends Controller
 {
@@ -220,7 +221,6 @@ class AdminController extends Controller
 
         $guru->update($userData);
 
-        // Update data guru
         $guru->guru->update([
             'nip' => $validated['nip'],
             'mata_pelajaran' => $validated['mata_pelajaran'],
@@ -234,9 +234,7 @@ class AdminController extends Controller
 
     public function guruDestroy(User $guru)
     {
-        // Hapus data guru terlebih dahulu
         $guru->guru()->delete();
-        // Kemudian hapus data user
         $guru->delete();
 
         return redirect()->route('admin.guru.index')
@@ -246,110 +244,70 @@ class AdminController extends Controller
     // Manajemen Wali Kelas
     public function walikelasIndex()
     {
-        $walikelas = User::with('guru')
-            ->whereHas('guru', function($query) {
-                $query->where('status_guru', 'wali_kelas');
-            })->get();
+        $walikelas = WaliKelas::all();
 
         return view('admin.walikelas.index', compact('walikelas'));
     }
 
     public function walikelasCreate()
     {
-        // Ambil hanya guru yang berstatus guru_mapel
-        $guru = User::with('guru')
-            ->whereHas('guru', function($query) {
-                $query->where('status_guru', 'guru_mapel');
-            })
-            ->where('role', 'guru')
-            ->get();
-
-        return view('admin.walikelas.create', compact('guru'));
+        return view('admin.walikelas.create');
     }
 
     public function walikelasStore(Request $request)
     {
         $validated = $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'kelas' => 'required|in:10,11,12'
+            'name' => 'required',
+            'email' => 'required|email|unique:wali_kelas,email',
+            'password' => 'required|min:6',
+            'kelas_ajar' => 'required|in:10,11,12',
         ]);
 
-        $guru = Guru::where('user_id', $request->user_id)->first();
-        if ($guru) {
-            $guru->update([
-                'status_guru' => 'wali_kelas',
-                'kelas_ajar' => $validated['kelas']
-            ]);
-        }
+        WaliKelas::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'kelas_ajar' => $validated['kelas_ajar'],
+        ]);
 
-        return redirect()->route('admin.walikelas.index')
-            ->with('success', 'Wali Kelas berhasil ditambahkan');
+        return redirect()->route('admin.walikelas.index')->with('success', 'Wali Kelas berhasil ditambahkan');
     }
 
     public function walikelasEdit($id)
     {
-        $walikelas = User::with('guru')->findOrFail($id);
-        $guru = User::with('guru')
-            ->whereHas('guru', function($query) use ($id) {
-                $query->where('status_guru', 'guru_mapel')
-                    ->orWhere('user_id', $id);
-            })->get();
-        return view('admin.walikelas.edit', compact('walikelas', 'guru'));
+        $walikelas = WaliKelas::findOrFail($id);
+
+        return view('admin.walikelas.edit', compact('walikelas'));
     }
 
     public function walikelasUpdate(Request $request, $id)
     {
         $validated = $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'kelas' => 'required'
+            'name' => 'required',
+            'email' => 'required|email|unique:wali_kelas,email,' . $id,
+            'kelas_ajar' => 'required|in:10,11,12',
+            'password' => 'nullable|min:6',
         ]);
+        $walikelas = WaliKelas::findOrFail($id);
+        $walikelas->name = $validated['name'];
+        $walikelas->email = $validated['email'];
+        $walikelas->kelas_ajar = $validated['kelas_ajar'];
 
-        // Cari guru yang akan diupdate
-        $guruLama = Guru::where('user_id', $id)->first();
-        $guruBaru = Guru::where('user_id', $request->user_id)->first();
-
-        // Jika mengganti guru
-        if ($id != $request->user_id) {
-            // Update status guru lama menjadi guru mapel
-            if ($guruLama) {
-                $guruLama->update([
-                    'status_guru' => 'guru_mapel',
-                    'kelas_ajar' => '10' // Set default value sesuai enum
-                ]);
-            }
-
-            // Update guru baru menjadi wali kelas
-            if ($guruBaru) {
-                $guruBaru->update([
-                    'status_guru' => 'wali_kelas',
-                    'kelas_ajar' => $validated['kelas']
-                ]);
-            }
-        } else {
-            // Jika hanya update kelas
-            if ($guruLama) {
-                $guruLama->update([
-                    'kelas_ajar' => $validated['kelas']
-                ]);
-            }
+        if ($request->filled('password')) {
+            $walikelas->password = Hash::make($validated['password']);
         }
 
-        return redirect()->route('admin.walikelas.index')
-            ->with('success', 'Data wali kelas berhasil diperbarui');
+        $walikelas->save();
+
+        return redirect()->route('admin.walikelas.index')->with('success', 'Wali Kelas berhasil diperbarui');
     }
 
     public function walikelasDestroy($id)
     {
-        $guru = Guru::where('user_id', $id)->first();
-        if ($guru) {
-            $guru->update([
-                'status_guru' => 'guru_mapel',
-                'kelas_ajar' => '10' // Set default value sesuai enum
-            ]);
-        }
+        $walikelas = WaliKelas::findOrFail($id);
+        $walikelas->delete();
 
-        return redirect()->route('admin.walikelas.index')
-            ->with('success', 'Wali Kelas berhasil dihapus');
+        return redirect()->route('admin.walikelas.index')->with('success', 'Wali Kelas berhasil dihapus');
     }
 
     // Manajemen Siswa
