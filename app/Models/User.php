@@ -73,6 +73,11 @@ class User extends Authenticatable
         return $this->hasMany(Nilai::class, 'guru_id');
     }
 
+    public function walikelas()
+    {
+        return $this->hasOne(WaliKelas::class);
+    }
+
     // Scope queries
     public function scopeGuru($query)
     {
