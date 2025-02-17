@@ -106,3 +106,5 @@ Route::middleware(['auth', 'role:siswa'])->prefix('siswa')->name('siswa.')->grou
     Route::get('/nilai', [SiswaController::class, 'nilai'])->name('nilai');
     Route::get('/download-rapor', [SiswaController::class, 'downloadRapor'])->name('download-rapor');
 });
+
+Route::put('/admin/walikelas/{id}', [AdminController::class, 'walikelasUpdate'])->name('admin.walikelas.update');
