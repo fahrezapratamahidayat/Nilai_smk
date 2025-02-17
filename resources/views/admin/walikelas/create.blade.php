@@ -15,31 +15,42 @@
                 <form action="{{ route('admin.walikelas.store') }}" method="POST">
                     @csrf
                     <div class="mb-3">
-                        <label for="user_id" class="form-label">Pilih Guru</label>
-                        <select class="form-select @error('user_id') is-invalid @enderror"
-                                name="user_id" required>
-                            <option value="">Pilih Guru</option>
-                            @foreach($guru as $g)
-                                <option value="{{ $g->id }}" {{ old('user_id') == $g->id ? 'selected' : '' }}>
-                                    {{ $g->name }} - {{ $g->guru->nip }}
-                                </option>
-                            @endforeach
-                        </select>
-                        @error('user_id')
+                        <label for="name" class="form-label">Nama Lengkap</label>
+                        <input type="text" class="form-control @error('name') is-invalid @enderror"
+                               id="name" name="name" value="{{ old('name') }}" required>
+                        @error('name')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
 
                     <div class="mb-3">
-                        <label for="kelas" class="form-label">Kelas</label>
-                        <select class="form-select @error('kelas') is-invalid @enderror"
-                                name="kelas" required>
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control @error('email') is-invalid @enderror"
+                               id="email" name="email" value="{{ old('email') }}" required>
+                        @error('email')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control @error('password') is-invalid @enderror"
+                               id="password" name="password" required>
+                        @error('password')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="kelas_ajar" class="form-label">Kelas yang Diajar</label>
+                        <select class="form-select @error('kelas_ajar') is-invalid @enderror"
+                                id="kelas_ajar" name="kelas_ajar" required>
                             <option value="">Pilih Kelas</option>
-                            <option value="10" {{ old('kelas') == '10' ? 'selected' : '' }}>10</option>
-                            <option value="11" {{ old('kelas') == '11' ? 'selected' : '' }}>11</option>
-                            <option value="12" {{ old('kelas') == '12' ? 'selected' : '' }}>12</option>
+                            <option value="10" {{ old('kelas_ajar') == '10' ? 'selected' : '' }}>Kelas 10</option>
+                            <option value="11" {{ old('kelas_ajar') == '11' ? 'selected' : '' }}>Kelas 11</option>
+                            <option value="12" {{ old('kelas_ajar') == '12' ? 'selected' : '' }}>Kelas 12</option>
                         </select>
-                        @error('kelas')
+                        @error('kelas_ajar')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
